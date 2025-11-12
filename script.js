@@ -117,7 +117,7 @@ wsService.onmessage = (event) => {
     }
     else if (data.type === "activeSource") {
       const el = document.getElementById("active-source");
-      if (el) el.textContent = `Source HDBaseT active : ${data.label}`;
+      if (el) el.textContent = `Source HDMI active : ${data.label}`;
     }
   } catch (e) {
     console.error("Erreur parsing /service:", e);
@@ -190,19 +190,19 @@ document.querySelectorAll('.btn-proj-input').forEach(button => {
 // =========================
 document.querySelectorAll('.btn-matrix-source').forEach(btn => {
   btn.addEventListener('click', () => {
-    let cmd;
-    const sourceText = btn.textContent.trim(); // "Source 1", "Source 2", ...
     
-    if (sourceText === "Source 1") cmd = "hdmi1";
-    else if (sourceText === "Source 2") cmd = "hdmi2";
-    else if (sourceText === "Source 3") cmd = "hdmi3";
+    // ⬇️ MODIFICATION ICI ⬇️
+    // On lit l'attribut "data-source" au lieu du texte
+    const cmd = btn.dataset.source; // Contiendra "hdmi1", "hdmi2", ou "hdmi3"
+    // On garde le texte juste pour le message
+    const sourceText = btn.textContent.trim(); 
     
     if (cmd) {
-      // On envoie la commande (hdmi1, hdmi2, hdmi3) au WebSocket des sources
-      // Node-RED la traduira en commande RS232 pour la matrice
+      // On envoie la commande (hdmi1, hdmi2, hdmi3) au WebSocket
       sendCommand(wsSource, cmd); 
-      showToast(`Routage HDBaseT vers ${sourceText} demandé`);
+      showToast(`Routage HDMI vers ${sourceText} demandé`);
     }
+    // ⬆️ FIN DE LA MODIFICATION ⬆️ (plus besoin des 'if/else')
   });
 });
 
