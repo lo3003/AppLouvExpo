@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LouvExpo</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="script.js"></script>
+</head>
+
+
+<div id="confirm-modal" class="modal hidden">
+  <div class="modal-content">
+    <p id="modal-message">Êtes-vous sûr ?</p>
+    <div class="modal-actions">
+      <button id="confirm-yes" class="modal-button confirm">Oui</button>
+      <button id="confirm-no" class="modal-button cancel">Non</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Bouton Service en bas à droite -->
+<button id="service-btn" class="service-btn">Service</button>
+
+<!-- Modale Service -->
+<div id="service-modal" class="modal hidden">
+  <div class="modal-content">
+    <h2>Heures d'utilisation lampes</h2>
+    <div id="lampes-info"></div>
+    <div class="modal-actions">
+      <button id="service-close" class="toggle">Fermer</button>
+    </div>
+  </div>
+</div>
+
+
+
+<div id="toast" class="toast hidden">Message</div>
+
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <img src="images/louvexpo-logo.png" alt="Logo" class="logo-img" />
+        <span class="logo-text"></span>
+      </div>
+
+      <button class="nav-button" data-page="projecteur">Vidéo</button>
+      <button class="nav-button" data-page="audio">Son & Micro</button>
+      <!--<button class="nav-button" data-page="systeme">Système</button>-->
+
+      <div class="power-controls">
+        <button class="power-button" data-power="on">Allumer</button>
+        <button class="power-button" data-power="off">Éteindre</button>
+      </div>
+
+    </aside>
+
+    <main class="main">
+      <header>
+        <h1 id="page-title">Vidéoprojecteur</h1>
+        <div id="clock"></div>
+      </header>
+
+      <section id="projecteur" class="page active">
+        <h2>Contrôle Vidéoprojecteur</h2>
+        <div class="centered">
+          <p>État actuel : <strong id="etat-videoproj">Éteint</strong></p>
+          <button class="toggle" data-group="projecteur" data-etat="on">Allumer</button>
+          <button class="toggle" data-group="projecteur" data-etat="off">Éteindre</button>
+          <div class="sources">
+            <h3 class="sources-title">Sélection de la source</h3>
+            <p id="active-source">Entrée active : —</p>
+            <button class="toggle" data-group="source">HDMI 1</button>
+            <button class="toggle" data-group="source">HDMI 2</button>
+            <button class="toggle" data-group="source">HDMI 3</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="audio" class="page">
+        <h2>Contrôle Audio</h2>
+        <div class="sliders">
+          <div class="slider-row">
+            <label>Volume Micro</label>
+            <input type="range" min="0" max="100" />
+            <span class="slider-value">50</span>
+          </div>
+          <div class="slider-row">
+            <label>Enceinte Gauche</label>
+            <input type="range" min="0" max="100" />
+            <span class="slider-value">50</span>
+          </div>
+          <div class="slider-row">
+            <label>Enceinte Droite</label>
+            <input type="range" min="0" max="100" />
+            <span class="slider-value">50</span>
+          </div>
+          <div class="slider-row">
+            <label>Subwoofer</label>
+            <input type="range" min="0" max="100" />
+            <span class="slider-value">50</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="systeme" class="page">
+        <h2>Informations Système</h2>
+        <div class="centered">
+          <p>Status: <span id="status">En attente...</span></p>
+          <button class="toggle" data-group="systeme" data-etat="on">Redémarrer</button>
+          <button class="toggle" data-group="systeme" data-etat="off">Éteindre</button>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

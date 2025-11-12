@@ -1,0 +1,390 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  background: #f9f9f9;
+  color: #222;
+  display: flex;
+  height: 100vh;
+}
+
+.app {
+  display: flex;
+  width: 100%;
+}
+
+.sidebar {
+  background: #ffffff;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  width: 220px;
+  border-right: 1px solid #ddd;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.05);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.logo-img {
+  height: 125px; /* ajuste selon la taille réelle */
+  width: auto;
+  object-fit: contain;
+}
+
+.logo-text {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #005fa3;
+}
+
+
+
+.nav-button {
+  background: #f0f0f0;
+  border: none;
+  padding: 1rem;
+  margin: 0.5rem 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.nav-button:hover {
+  background: #ddd;
+}
+
+
+.nav-button.active {
+  background: #e0f0ff;
+  color: #023153;
+  font-weight: bold;
+}
+
+.sources-title{
+  font-size: 25px;
+}
+
+
+.main {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+header h1 {
+  font-size: 2rem;
+  color: #000000;
+}
+
+.page {
+  display: none;
+  text-align: center;
+}
+
+.page.active {
+  display: block;
+}
+
+.centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Toggle Buttons */
+button.toggle {
+  background: #e0e0e0;
+  color: #333;
+  border: none;
+  border-radius: 8px;
+  padding: 1rem 2rem;
+  margin: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+button{
+  font-size: 1rem;
+}
+
+button.toggle:hover {
+  background: #e0f0ff;
+;
+}
+
+button.toggle.active {
+  
+  font-weight: bold;
+  color: #000000;
+  background: #e0f0ff;
+}
+
+button.toggle[data-etat="on"].active {
+  background: #28a745;
+}
+
+button.toggle[data-etat="off"].active {
+  background: #dc3545;
+}
+
+.sources {
+  margin-top: 1rem;
+}
+
+/* Sliders Section */
+.sliders {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rem;
+  margin-top: 2rem;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  width: 80%;
+  gap: 1rem;
+}
+
+.slider-row label {
+  font-size: 20px;
+  width: 150px;
+  text-align: left;
+  font-weight: 500;
+}
+
+.slider-row .slider-value {
+  width: 40px;
+  text-align: left;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 14px;
+  background: #ddd;
+  border-radius: 7px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 32px;
+  height: 32px;
+  background: #0077cc;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 32px;
+  height: 32px;
+  background: #0077cc;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+
+#clock {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+}
+
+label{
+  font-size: 1em;
+}
+
+
+.power-controls {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid #ccc;
+}
+
+.power-button {
+  padding: 0.8rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s;
+  color: white;
+}
+
+.power-button[data-power="on"] {
+  background-color: #28a745;
+}
+
+.power-button[data-power="off"] {
+  background-color: #dc3545;
+}
+
+.power-button:hover {
+  opacity: 0.85;
+}
+
+
+
+/* Modale de confirmation */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  max-width: 300px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.modal-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: space-around;
+  gap: 1rem;
+}
+
+.modal-button {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.modal-button.confirm {
+  background-color: #28a745;
+  color: white;
+}
+
+.modal-button.cancel {
+  background-color: #dc3545;
+  color: white;
+}
+
+
+.toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  background: #2c2c3f;
+  color: #ffffff;
+  padding: 1.2rem 2rem;
+  border-radius: 16px;
+  font-size: 1.2rem;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 1000;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.toast.hidden {
+  display: none;
+}
+
+#lampes-info {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f1f1f1;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.hidden {
+  display: none;
+}
+
+
+/* Bouton service en bas à droite */
+.service-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #0077cc;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 0.8rem 1.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+.service-btn:hover {
+  background: #005fa3;
+}
+
+/* Modale générique */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.modal-actions {
+  margin-top: 1rem;
+}
