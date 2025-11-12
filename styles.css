@@ -467,3 +467,32 @@ Styles Page Vidéo (Nouveaux)
 #matrix-source-section.disabled h3 {
   color: #999;
 }
+/* =========================
+Styles Boutons Mute Audio
+=========================
+*/
+.slider-row {
+  /* On s'assure que tout est centré verticalement */
+  align-items: center;
+}
+
+.btn-mute {
+  /* Style de base */
+  background: #e0e0e0;
+  color: #333;
+  padding: 0.8rem 1.2rem;
+  border-radius: 8px;
+  font-weight: bold;
+  margin-left: 1.5rem; /* Espace entre le slider et le bouton */
+  width: 100px; /* Largeur fixe */
+}
+
+.btn-mute:hover {
+  background: #ddd;
+}
+
+/* Style quand le Mute est ACTIF */
+.btn-mute.active {
+  background-color: #dc3545; /* Rouge (comme les boutons OFF) */
+  color: white;
+}

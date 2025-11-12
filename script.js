@@ -39,11 +39,13 @@ toggleButtons.forEach(button => {
   button.addEventListener("click", () => {
     const group = button.dataset.group;
     if (group) {
+      // Ce code ne s'exécute que pour les boutons avec data-group
       toggleButtons.forEach(btn => {
         if (btn.dataset.group === group) btn.classList.remove("active");
       });
+      button.classList.add("active"); // ✅ CORRIGÉ (maintenant à l'intérieur du 'if')
     }
-    button.classList.add("active");
+    // S'il n'y a pas de data-group (comme pour 'Mute'), ce listener ne fait plus rien.
   });
 });
 
@@ -77,17 +79,26 @@ function sendCommand(ws, command) {
 // =========================
 function sendSliderValue(name, value) {
   let sliderId;
-  if (name === "Volume Micro")   sliderId = "fader1";
-  if (name === "Enceinte Gauche") sliderId = "fader2";
-  if (name === "Enceinte Droite") sliderId = "fader3";
-  if (name === "Subwoofer")       sliderId = "fader4";
+
+  // Mise à jour des noms et ajout de fader5
+  if (name === "Micro 1")           sliderId = "fader1";
+  if (name === "Micro 2")           sliderId = "fader2";
+  if (name === "Enceinte face")     sliderId = "fader3";
+  if (name === "Enceinte arrière")  sliderId = "fader4";
+  if (name === "Subwoofer")         sliderId = "fader5";
 
   const convertedValue = parseFloat(value) / 100; // 0–100 -> 0–1
-  const payload = JSON.stringify({
-    slider: sliderId,
-    value: convertedValue
-  });
-  sendCommand(wsAudio, payload);
+
+  // Ce code vérifie si un sliderId a été trouvé avant d'envoyer
+  if (sliderId) {
+    const payload = JSON.stringify({
+      slider: sliderId,
+      value: convertedValue
+    });
+    sendCommand(wsAudio, payload);
+  } else {
+    console.warn(`Aucun fader mappé pour le label: ${name}`);
+  }
 }
 
 document.querySelectorAll(".slider-row input[type=range]").forEach(slider => {
@@ -179,7 +190,7 @@ document.querySelectorAll('.btn-proj-input').forEach(button => {
       
       // 2. DÉ-griser la section matrice
       matrixSourceSection.classList.remove('disabled');
-      showToast('Entrée Projecteur : HDBaseT');
+      showToast('Entrée Projecteur : HDMI');
     }
   });
 });
@@ -273,5 +284,39 @@ document.querySelectorAll('.btn-prise').forEach(button => {
     sendCommand(wsPower, command);
     
     showToast(`Commande ${command} envoyée`);
+  });
+});
+
+
+
+// =========================
+// Contrôle Mute Audio (X32)
+// =========================
+document.querySelectorAll('.btn-mute').forEach(button => {
+  button.addEventListener('click', () => {
+    
+    // 1. Change l'état visuel du bouton
+    button.classList.toggle('active');
+
+    // 2. Détermine l'état (Mute = 0, Unmute = 1)
+    // La commande OSC /ch/xx/mix/on est un "On/Off", 
+    // donc 0 = Mute (Off) et 1 = Unmute (On).
+    const isMuted = button.classList.contains('active');
+    const state = isMuted ? 0 : 1; // 0 pour Mute, 1 pour Unmute
+
+    // 3. Récupère le canal depuis l'attribut data-channel (ex: "01")
+    const channel = button.dataset.channel;
+
+    // 4. Crée un payload JSON *différent* de celui des sliders
+    const payload = JSON.stringify({
+      mute: `ch${channel}`, // ex: "ch01"
+      state: state           // ex: 0
+    });
+
+    // 5. Envoie au même WebSocket audio
+    sendCommand(wsAudio, payload);
+
+    // 6. Affiche un retour
+    showToast(`Canal ${channel} ${isMuted ? 'MUTE' : 'UNMUTE'}`);
   });
 });

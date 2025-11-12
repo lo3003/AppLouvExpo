@@ -48,7 +48,6 @@
 
       <button class="nav-button" data-page="projecteur">Vidéo</button>
       <button class="nav-button" data-page="audio">Son & Micro</button>
-      <button class="nav-button" data-page="alimentation">Alimentation</button>
       <!--<button class="nav-button" data-page="systeme">Système</button>-->
 
       <div class="power-controls">
@@ -100,26 +99,42 @@
       <section id="audio" class="page">
         <h2>Contrôle Audio</h2>
         <div class="sliders">
+          
           <div class="slider-row">
-            <label>Volume Micro</label>
+            <label>Micro 1</label>
             <input type="range" min="0" max="100" />
             <span class="slider-value">50</span>
+            <button class="toggle btn-mute" data-channel="01">Mute</button>
           </div>
+          
           <div class="slider-row">
-            <label>Enceinte Gauche</label>
+            <label>Micro 2</label>
             <input type="range" min="0" max="100" />
             <span class="slider-value">50</span>
+            <button class="toggle btn-mute" data-channel="02">Mute</button>
           </div>
+
           <div class="slider-row">
-            <label>Enceinte Droite</label>
+            <label>Enceinte face</label>
             <input type="range" min="0" max="100" />
             <span class="slider-value">50</span>
+            <button class="toggle btn-mute" data-channel="03">Mute</button>
           </div>
+          
+          <div class="slider-row">
+            <label>Enceinte arrière</label>
+            <input type="range" min="0" max="100" />
+            <span class="slider-value">50</span>
+            <button class="toggle btn-mute" data-channel="04">Mute</button>
+          </div>
+          
           <div class="slider-row">
             <label>Subwoofer</label>
             <input type="range" min="0" max="100" />
             <span class="slider-value">50</span>
+            <button class="toggle btn-mute" data-channel="05">Mute</button>
           </div>
+
         </div>
       </section>
 
