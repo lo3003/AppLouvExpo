@@ -48,12 +48,17 @@
 
       <button class="nav-button" data-page="projecteur">Vidéo</button>
       <button class="nav-button" data-page="audio">Son & Micro</button>
+      <button class="nav-button" data-page="alimentation">Alimentation</button>
       <!--<button class="nav-button" data-page="systeme">Système</button>-->
 
       <div class="power-controls">
         <button class="power-button" data-power="on">Allumer</button>
         <button class="power-button" data-power="off">Éteindre</button>
       </div>
+
+      
+
+      <div class="power-controls">
 
     </aside>
 
@@ -64,18 +69,30 @@
       </header>
 
       <section id="projecteur" class="page active">
-        <h2>Contrôle Vidéoprojecteur</h2>
+        <h2>Contrôle Vidéo</h2>
         <div class="centered">
-          <p>État actuel : <strong id="etat-videoproj">Éteint</strong></p>
-          <button class="toggle" data-group="projecteur" data-etat="on">Allumer</button>
-          <button class="toggle" data-group="projecteur" data-etat="off">Éteindre</button>
-          <div class="sources">
-            <h3 class="sources-title">Sélection de la source</h3>
-            <p id="active-source">Entrée active : —</p>
-            <button class="toggle" data-group="source">HDMI 1</button>
-            <button class="toggle" data-group="source">HDMI 2</button>
-            <button class="toggle" data-group="source">HDMI 3</button>
+
+          <div class="video-section">
+            <h3 class="sources-title">Contrôle Général</h3>
+            <p>État actuel : <strong id="etat-videoproj">Éteint</strong></p>
+            <button class="toggle" data-group="projecteur" data-etat="on">Allumer</button>
+            <button class="toggle" data-group="projecteur" data-etat="off">Éteindre</button>
           </div>
+
+          <div class="video-section">
+            <h3 class="sources-title">Sélection Entrée Projecteur</h3>
+            <button class="toggle btn-proj-input" data-group="proj-input" data-input="sdi">SDI</button>
+            <button class="toggle btn-proj-input active" data-group="proj-input" data-input="hdbt">HDMI</button>
+          </div>
+
+          <div id="matrix-source-section" class="sources video-section">
+            <h3 class="sources-title">Sélection Source HDMI</h3>
+            <p id="active-source">Source active : —</p>
+            <button class="toggle btn-matrix-source" data-group="source">Ecran</button>
+            <button class="toggle btn-matrix-source" data-group="source">Fond de salle</button>
+            <button class="toggle btn-matrix-source" data-group="source">Régie</button>
+          </div>
+
         </div>
       </section>
 
@@ -104,6 +121,34 @@
           </div>
         </div>
       </section>
+
+      </section>
+
+      <section id="alimentation" class="page">
+        <h2>Contrôle Alimentation (Détaillé)</h2>
+        <div class="power-grid">
+          
+          <div class="power-box">
+            <h3>Prise 1 (Canal 1)</h3>
+            <div class="power-box-buttons">
+              <button class="toggle btn-prise" data-group="prise1" data-id="1" data-action="on">ON</button>
+              <button class="toggle btn-prise" data-group="prise1" data-id="1" data-action="off">OFF</button>
+            </div>
+          </div>
+
+          <div class="power-box">
+            <h3>Prise 2 (Canal 2)</h3>
+            <div class="power-box-buttons">
+              <button class="toggle btn-prise" data-group="prise2" data-id="2" data-action="on">ON</button>
+              <button class="toggle btn-prise" data-group="prise2" data-id="2" data-action="off">OFF</button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <section id="systeme" class="page">
+
 
       <section id="systeme" class="page">
         <h2>Informations Système</h2>

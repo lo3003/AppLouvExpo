@@ -44,18 +44,37 @@ toggleButtons.forEach(button => {
       });
     }
     button.classList.add("active");
-    // ⛔️ On ne modifie plus le texte d’état ici :
-    // l’état vient désormais de Node-RED via /service
   });
 });
 
 // =========================
-// WebSocket sliders (X32)
+// NOUVEAUX WebSockets de Contrôle
 // =========================
-const ws = new WebSocket("ws://127.0.0.1:1880/sliders");
-ws.onopen  = () => console.log("WebSocket sliders connecté");
-ws.onerror = err => console.error("Erreur WebSocket sliders", err);
+const wsPower       = new WebSocket("ws://127.0.0.1:1880/controle-power");
+const wsProjecteur  = new WebSocket("ws://127.0.0.1:1880/controle-projecteur");
+const wsSource      = new WebSocket("ws://127.0.0.1:1880/controle-source");
+const wsAudio       = new WebSocket("ws://127.0.0.1:1880/controle-audio");
 
+// WebSocket de Feedback (inchangé)
+const wsService = new WebSocket("ws://127.0.0.1:1880/service");
+
+// Fonction d'envoi générique et robuste
+function sendCommand(ws, command) {
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(command);
+  } else {
+    ws.addEventListener('open', () => {
+      ws.send(command);
+    }, { once: true });
+    if (ws.readyState !== WebSocket.CONNECTING) {
+        console.warn(`Socket ${ws.url} n'est pas ouvert (État: ${ws.readyState}). Commande mise en file d'attente.`);
+    }
+  }
+}
+
+// =========================
+// WebSocket Audio (X32)
+// =========================
 function sendSliderValue(name, value) {
   let sliderId;
   if (name === "Volume Micro")   sliderId = "fader1";
@@ -64,11 +83,11 @@ function sendSliderValue(name, value) {
   if (name === "Subwoofer")       sliderId = "fader4";
 
   const convertedValue = parseFloat(value) / 100; // 0–100 -> 0–1
-
-  ws.send(JSON.stringify({
+  const payload = JSON.stringify({
     slider: sliderId,
     value: convertedValue
-  }));
+  });
+  sendCommand(wsAudio, payload);
 }
 
 document.querySelectorAll(".slider-row input[type=range]").forEach(slider => {
@@ -82,36 +101,28 @@ document.querySelectorAll(".slider-row input[type=range]").forEach(slider => {
 });
 
 // =========================
-// WebSocket /service : heures lampes + état projecteur
+// WebSocket /service (INCHANGÉ)
 // =========================
 let lastLampesData = [];
-const wsService = new WebSocket("ws://127.0.0.1:1880/service");
-
 wsService.onmessage = (event) => {
   try {
     const data = JSON.parse(event.data);
-
-    // Heures lampes
     if (data.type === "heuresLampes" && Array.isArray(data.lampes)) {
       lastLampesData = data.lampes;
       updateLampesUI();
     }
-    // État projecteur
     else if (data.type === "etatProjecteur") {
       const label = document.getElementById("etat-videoproj");
       if (label) label.textContent = data.etat;
     }
-    // ➜ Source active (retour RS232)
     else if (data.type === "activeSource") {
       const el = document.getElementById("active-source");
-      if (el) el.textContent = `Entrée active : ${data.label}`;
+      if (el) el.textContent = `Source HDBaseT active : ${data.label}`;
     }
-
   } catch (e) {
     console.error("Erreur parsing /service:", e);
   }
 };
-
 
 function updateLampesUI() {
   const el = document.getElementById("lampes-info");
@@ -123,56 +134,78 @@ function updateLampesUI() {
 }
 
 // =========================
-/* WebSocket commandes projecteur + RS232 (sources HDMI)
-   On réutilise le même WS `/projecteur-control`.
-   Node-RED fera le switch entre:
-   - "on" / "off"  (PJLink power)
-   - "getlamps"    (PJLink lamp hours -> /service)
-   - "hdmi1|hdmi2|hdmi3" (RS232 vers switch d’entrées)
-*/
+// Commandes Générales Projecteur (Allumer/Eteindre/Service)
 // =========================
-const wsProjecteur = new WebSocket("ws://127.0.0.1:1880/projecteur-control");
-
-function sendProjectorCommand(cmd) {
-  if (wsProjecteur.readyState === WebSocket.OPEN) {
-    wsProjecteur.send(cmd);
-  } else {
-    // En cas de clic très tôt, on attend l'ouverture
-    wsProjecteur.addEventListener('open', () => {
-      wsProjecteur.send(cmd);
-    }, { once: true });
-  }
-}
 
 // Allumer / Éteindre
 document.querySelector('button[data-group="projecteur"][data-etat="on"]')
-  .addEventListener("click", () => sendProjectorCommand("on"));
+  .addEventListener("click", () => sendCommand(wsProjecteur, "on"));
 
 document.querySelector('button[data-group="projecteur"][data-etat="off"]')
-  .addEventListener("click", () => sendProjectorCommand("off"));
-
-// ⬇️ ENVOI RS232 POUR LES SOURCES HDMI
-document.querySelectorAll('button[data-group="source"]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    // Convertit "HDMI 1" -> "hdmi1"
-    const cmd = btn.textContent.replace(/\s+/g, '').toLowerCase(); // hdmi1/hdmi2/hdmi3
-    if (/^hdmi[123]$/.test(cmd)) {
-      sendProjectorCommand(cmd);
-      showToast(`Source ${cmd.toUpperCase()} envoyée`);
-    }
-  });
-});
+  .addEventListener("click", () => sendCommand(wsProjecteur, "off"));
 
 // Bouton Service (heures lampes)
 document.getElementById("service-btn").addEventListener("click", () => {
-  sendProjectorCommand("getlamps");
+  sendCommand(wsProjecteur, "getlamps");
   document.getElementById("service-modal").classList.remove("hidden");
-  updateLampesUI(); // si déjà reçues, on affiche tout de suite
+  updateLampesUI(); 
 });
 
 document.getElementById("service-close").addEventListener("click", () => {
   document.getElementById("service-modal").classList.add("hidden");
 });
+
+
+// =========================
+// Commandes Entrée Projecteur (SDI/HDBT)
+// =========================
+const matrixSourceSection = document.getElementById('matrix-source-section');
+
+document.querySelectorAll('.btn-proj-input').forEach(button => {
+  button.addEventListener('click', () => {
+    const inputType = button.dataset.input; // "sdi" ou "hdbt"
+
+    if (inputType === 'sdi') {
+      // 1. Envoyer la commande au projecteur
+      sendCommand(wsProjecteur, "sdi_input"); // Commande pour Node-RED
+      
+      // 2. Griser la section matrice
+      matrixSourceSection.classList.add('disabled');
+      showToast('Entrée Projecteur : SDI');
+
+    } else if (inputType === 'hdbt') {
+      // 1. Envoyer la commande au projecteur
+      sendCommand(wsProjecteur, "hdbt_input"); // Commande pour Node-RED
+      
+      // 2. DÉ-griser la section matrice
+      matrixSourceSection.classList.remove('disabled');
+      showToast('Entrée Projecteur : HDBaseT');
+    }
+  });
+});
+
+
+// =========================
+// Commandes Matrice (Source 1/2/3)
+// =========================
+document.querySelectorAll('.btn-matrix-source').forEach(btn => {
+  btn.addEventListener('click', () => {
+    let cmd;
+    const sourceText = btn.textContent.trim(); // "Source 1", "Source 2", ...
+    
+    if (sourceText === "Source 1") cmd = "hdmi1";
+    else if (sourceText === "Source 2") cmd = "hdmi2";
+    else if (sourceText === "Source 3") cmd = "hdmi3";
+    
+    if (cmd) {
+      // On envoie la commande (hdmi1, hdmi2, hdmi3) au WebSocket des sources
+      // Node-RED la traduira en commande RS232 pour la matrice
+      sendCommand(wsSource, cmd); 
+      showToast(`Routage HDBaseT vers ${sourceText} demandé`);
+    }
+  });
+});
+
 
 // =========================
 // Confirmation power général (sidebar)
@@ -200,8 +233,12 @@ powerButtons.forEach(btn => {
 
 confirmYes.addEventListener("click", () => {
   modal.classList.add("hidden");
-  systemState = pendingPowerAction;
-  showToast(`Système ${pendingPowerAction === "on" ? "allumé" : "éteint"}`);
+  systemState = pendingPowerAction; 
+
+  const command = (pendingPowerAction === "on") ? "system_on" : "system_off";
+  sendCommand(wsPower, command);
+  
+  showToast(`Ordre ${command} envoyé au système`);
   pendingPowerAction = null;
 });
 
@@ -223,3 +260,18 @@ function showToast(message) {
     setTimeout(() => toast.classList.add("hidden"), 400);
   }, 2500);
 }
+
+// =========================
+// Contrôle Prises (Page Alimentation)
+// =========================
+document.querySelectorAll('.btn-prise').forEach(button => {
+  button.addEventListener('click', () => {
+    const id = button.dataset.id;
+    const action = button.dataset.action;
+    const command = `prise_${id}_${action}`;
+    
+    sendCommand(wsPower, command);
+    
+    showToast(`Commande ${command} envoyée`);
+  });
+});
