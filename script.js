@@ -19,15 +19,24 @@ const pages = document.querySelectorAll(".page");
 const pageTitle = document.getElementById("page-title");
 
 navButtons.forEach(btn => {
+  // Ne pas attacher d'événement au bouton power mobile
+  if (btn.classList.contains('mobile-power-btn')) {
+    return;
+  }
+  
   btn.addEventListener("click", () => {
-    navButtons.forEach(b => b.classList.remove("active"));
+    navButtons.forEach(b => {
+        if (!b.classList.contains('mobile-power-btn')) {
+            b.classList.remove("active");
+        }
+    });
     btn.classList.add("active");
 
     const pageId = btn.getAttribute("data-page");
     pages.forEach(p => p.classList.remove("active"));
     document.getElementById(pageId).classList.add("active");
 
-    pageTitle.textContent = btn.textContent;
+    pageTitle.textContent = btn.textContent.replace("📽️", "").replace("🔉", "").trim();
   });
 });
 
@@ -39,26 +48,23 @@ toggleButtons.forEach(button => {
   button.addEventListener("click", () => {
     const group = button.dataset.group;
     if (group) {
-      // Ce code ne s'exécute que pour les boutons avec data-group
       toggleButtons.forEach(btn => {
         if (btn.dataset.group === group) btn.classList.remove("active");
       });
-      button.classList.add("active"); // ✅ CORRIGÉ (maintenant à l'intérieur du 'if')
+      button.classList.add("active");
     }
-    // S'il n'y a pas de data-group (comme pour 'Mute'), ce listener ne fait plus rien.
   });
 });
 
 // =========================
 // NOUVEAUX WebSockets de Contrôle
 // =========================
+// !! PENSEZ À CHANGER 127.0.0.1 PAR L'IP DE VOTRE PC DE CONTRÔLE !!
 const wsPower       = new WebSocket("ws://127.0.0.1:1880/controle-power");
 const wsProjecteur  = new WebSocket("ws://127.0.0.1:1880/controle-projecteur");
 const wsSource      = new WebSocket("ws://127.0.0.1:1880/controle-source");
 const wsAudio       = new WebSocket("ws://127.0.0.1:1880/controle-audio");
-
-// WebSocket de Feedback (inchangé)
-const wsService = new WebSocket("ws://127.0.0.1:1880/service");
+const wsService     = new WebSocket("ws://127.0.0.1:1880/service"); // Feedback
 
 // Fonction d'envoi générique et robuste
 function sendCommand(ws, command) {
@@ -75,12 +81,10 @@ function sendCommand(ws, command) {
 }
 
 // =========================
-// WebSocket Audio (X32)
+// WebSocket Audio (X32) - 5 SLIDERS
 // =========================
 function sendSliderValue(name, value) {
   let sliderId;
-
-  // Mise à jour des noms et ajout de fader5
   if (name === "Micro 1")           sliderId = "fader1";
   if (name === "Micro 2")           sliderId = "fader2";
   if (name === "Enceinte face")     sliderId = "fader3";
@@ -89,7 +93,6 @@ function sendSliderValue(name, value) {
 
   const convertedValue = parseFloat(value) / 100; // 0–100 -> 0–1
 
-  // Ce code vérifie si un sliderId a été trouvé avant d'envoyer
   if (sliderId) {
     const payload = JSON.stringify({
       slider: sliderId,
@@ -101,18 +104,19 @@ function sendSliderValue(name, value) {
   }
 }
 
-document.querySelectorAll(".slider-row input[type=range]").forEach(slider => {
-  const valueLabel = slider.nextElementSibling;
+document.querySelectorAll("#audio .slider-row input[type=range]").forEach(slider => {
+  const valueLabel = slider.parentElement.querySelector(".slider-value");
   valueLabel.textContent = slider.value;
+  
   slider.addEventListener("input", () => {
     valueLabel.textContent = slider.value;
-    const label = slider.parentElement.querySelector("label").textContent;
+    const label = slider.closest(".audio-card").querySelector("label").textContent;
     sendSliderValue(label, slider.value);
   });
 });
 
 // =========================
-// WebSocket /service (INCHANGÉ)
+// WebSocket /service (Feedback)
 // =========================
 let lastLampesData = [];
 wsService.onmessage = (event) => {
@@ -128,7 +132,7 @@ wsService.onmessage = (event) => {
     }
     else if (data.type === "activeSource") {
       const el = document.getElementById("active-source");
-      if (el) el.textContent = `Source HDMI active : ${data.label}`;
+      if (el) el.textContent = `Source active : ${data.label}`;
     }
   } catch (e) {
     console.error("Erreur parsing /service:", e);
@@ -147,15 +151,12 @@ function updateLampesUI() {
 // =========================
 // Commandes Générales Projecteur (Allumer/Eteindre/Service)
 // =========================
-
-// Allumer / Éteindre
 document.querySelector('button[data-group="projecteur"][data-etat="on"]')
   .addEventListener("click", () => sendCommand(wsProjecteur, "on"));
 
 document.querySelector('button[data-group="projecteur"][data-etat="off"]')
   .addEventListener("click", () => sendCommand(wsProjecteur, "off"));
 
-// Bouton Service (heures lampes)
 document.getElementById("service-btn").addEventListener("click", () => {
   sendCommand(wsProjecteur, "getlamps");
   document.getElementById("service-modal").classList.remove("hidden");
@@ -171,55 +172,38 @@ document.getElementById("service-close").addEventListener("click", () => {
 // Commandes Entrée Projecteur (SDI/HDBT)
 // =========================
 const matrixSourceSection = document.getElementById('matrix-source-section');
-
 document.querySelectorAll('.btn-proj-input').forEach(button => {
   button.addEventListener('click', () => {
-    const inputType = button.dataset.input; // "sdi" ou "hdbt"
-
+    const inputType = button.dataset.input;
+    const buttonText = button.textContent.trim();
     if (inputType === 'sdi') {
-      // 1. Envoyer la commande au projecteur
-      sendCommand(wsProjecteur, "sdi_input"); // Commande pour Node-RED
-      
-      // 2. Griser la section matrice
+      sendCommand(wsProjecteur, "sdi_input");
       matrixSourceSection.classList.add('disabled');
-      showToast('Entrée Projecteur : SDI');
-
+      showToast(`Entrée Projecteur : ${buttonText}`);
     } else if (inputType === 'hdbt') {
-      // 1. Envoyer la commande au projecteur
-      sendCommand(wsProjecteur, "hdbt_input"); // Commande pour Node-RED
-      
-      // 2. DÉ-griser la section matrice
+      sendCommand(wsProjecteur, "hdbt_input");
       matrixSourceSection.classList.remove('disabled');
-      showToast('Entrée Projecteur : HDMI');
+      showToast(`Entrée Projecteur : ${buttonText}`);
     }
   });
 });
-
 
 // =========================
 // Commandes Matrice (Source 1/2/3)
 // =========================
 document.querySelectorAll('.btn-matrix-source').forEach(btn => {
   btn.addEventListener('click', () => {
-    
-    // ⬇️ MODIFICATION ICI ⬇️
-    // On lit l'attribut "data-source" au lieu du texte
-    const cmd = btn.dataset.source; // Contiendra "hdmi1", "hdmi2", ou "hdmi3"
-    // On garde le texte juste pour le message
+    const cmd = btn.dataset.source;
     const sourceText = btn.textContent.trim(); 
-    
     if (cmd) {
-      // On envoie la commande (hdmi1, hdmi2, hdmi3) au WebSocket
       sendCommand(wsSource, cmd); 
       showToast(`Routage HDMI vers ${sourceText} demandé`);
     }
-    // ⬆️ FIN DE LA MODIFICATION ⬆️ (plus besoin des 'if/else')
   });
 });
 
-
 // =========================
-// Confirmation power général (sidebar)
+// Confirmation power général (Logique partagée)
 // =========================
 const powerButtons = document.querySelectorAll(".power-button");
 const modal = document.getElementById("confirm-modal");
@@ -229,28 +213,35 @@ const confirmNo = document.getElementById("confirm-no");
 
 let pendingPowerAction = null;
 
+// Logique pour ouvrir la modale de confirmation
+function openConfirmModal(action) {
+  if (action === systemState) {
+    showToast(`Le système est déjà ${action === "on" ? "allumé" : "éteint"}`);
+    return;
+  }
+  pendingPowerAction = action;
+  modalMessage.textContent = `Êtes-vous sûr de vouloir ${action === "on" ? "allumer" : "éteindre"} le système ?`;
+  modal.classList.remove("hidden");
+}
+
+// Écouteurs pour les boutons Power (Desktop + Mobile)
 powerButtons.forEach(btn => {
   btn.addEventListener("click", () => {
-    const state = btn.dataset.power;
-    if (state === systemState) {
-      showToast(`Le système est déjà ${state === "on" ? "allumé" : "éteint"}`);
-      return;
-    }
-    pendingPowerAction = state;
-    modalMessage.textContent = `Êtes-vous sûr de vouloir ${state === "on" ? "allumer" : "éteindre"} le système ?`;
-    modal.classList.remove("hidden");
+    const action = btn.dataset.power; // "on" ou "off"
+    openConfirmModal(action);
   });
 });
 
+// Logique de confirmation (commune)
 confirmYes.addEventListener("click", () => {
   modal.classList.add("hidden");
-  systemState = pendingPowerAction; 
-
-  const command = (pendingPowerAction === "on") ? "system_on" : "system_off";
-  sendCommand(wsPower, command);
-  
-  showToast(`Ordre ${command} envoyé au système`);
-  pendingPowerAction = null;
+  if (pendingPowerAction) {
+    systemState = pendingPowerAction; 
+    const command = (pendingPowerAction === "on") ? "system_on" : "system_off";
+    sendCommand(wsPower, command);
+    showToast(`Ordre ${command} envoyé au système`);
+    pendingPowerAction = null;
+  }
 });
 
 confirmNo.addEventListener("click", () => {
@@ -273,50 +264,51 @@ function showToast(message) {
 }
 
 // =========================
-// Contrôle Prises (Page Alimentation)
-// =========================
-document.querySelectorAll('.btn-prise').forEach(button => {
-  button.addEventListener('click', () => {
-    const id = button.dataset.id;
-    const action = button.dataset.action;
-    const command = `prise_${id}_${action}`;
-    
-    sendCommand(wsPower, command);
-    
-    showToast(`Commande ${command} envoyée`);
-  });
-});
-
-
-
-// =========================
 // Contrôle Mute Audio (X32)
 // =========================
 document.querySelectorAll('.btn-mute').forEach(button => {
   button.addEventListener('click', () => {
-    
-    // 1. Change l'état visuel du bouton
     button.classList.toggle('active');
-
-    // 2. Détermine l'état (Mute = 0, Unmute = 1)
-    // La commande OSC /ch/xx/mix/on est un "On/Off", 
-    // donc 0 = Mute (Off) et 1 = Unmute (On).
     const isMuted = button.classList.contains('active');
-    const state = isMuted ? 0 : 1; // 0 pour Mute, 1 pour Unmute
-
-    // 3. Récupère le canal depuis l'attribut data-channel (ex: "01")
+    const state = isMuted ? 0 : 1; // 0 = Mute, 1 = Unmute
     const channel = button.dataset.channel;
-
-    // 4. Crée un payload JSON *différent* de celui des sliders
     const payload = JSON.stringify({
-      mute: `ch${channel}`, // ex: "ch01"
-      state: state           // ex: 0
+      mute: `ch${channel}`,
+      state: state
     });
-
-    // 5. Envoie au même WebSocket audio
     sendCommand(wsAudio, payload);
-
-    // 6. Affiche un retour
-    showToast(`Canal ${channel} ${isMuted ? 'MUTE' : 'UNMUTE'}`);
+    const label = button.closest(".audio-card").querySelector("label").textContent;
+    showToast(`${label} ${isMuted ? 'MUTE' : 'UNMUTE'}`);
   });
+});
+
+// =========================
+// GESTION MODALE POWER MOBILE (NOUVEAU)
+// =========================
+const mobilePowerBtn = document.getElementById('mobile-power-btn');
+const mobilePowerModal = document.getElementById('mobile-power-choice-modal');
+const mobilePowerOn = document.getElementById('mobile-power-on');
+const mobilePowerOff = document.getElementById('mobile-power-off');
+const mobilePowerCancel = document.getElementById('mobile-power-cancel');
+
+// Ouvre la petite modale de choix
+mobilePowerBtn.addEventListener('click', () => {
+  mobilePowerModal.classList.remove('hidden');
+});
+
+// Ferme la petite modale
+mobilePowerCancel.addEventListener('click', () => {
+  mobilePowerModal.classList.add('hidden');
+});
+
+// Bouton "Allumer" de la petite modale
+mobilePowerOn.addEventListener('click', () => {
+  mobilePowerModal.classList.add('hidden');
+  openConfirmModal('on'); // Réutilise la logique de confirmation
+});
+
+// Bouton "Éteindre" de la petite modale
+mobilePowerOff.addEventListener('click', () => {
+  mobilePowerModal.classList.add('hidden');
+  openConfirmModal('off'); // Réutilise la logique de confirmation
 });

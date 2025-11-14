@@ -8,7 +8,6 @@
   <script defer src="script.js"></script>
 </head>
 
-
 <div id="confirm-modal" class="modal hidden">
   <div class="modal-content">
     <p id="modal-message">Êtes-vous sûr ?</p>
@@ -19,11 +18,19 @@
   </div>
 </div>
 
+<div id="mobile-power-choice-modal" class="modal hidden">
+  <div class="modal-content">
+    <h2 class="card-title">Alimentation Système</h2>
+    <div class="modal-actions-vertical">
+      <button id="mobile-power-on" class="power-button" data-power="on">Allumer le Système</button>
+      <button id="mobile-power-off" class="power-button" data-power="off">Éteindre le Système</button>
+      <button id="mobile-power-cancel" class="toggle">Annuler</button>
+    </div>
+  </div>
+</div>
 
-<!-- Bouton Service en bas à droite -->
+
 <button id="service-btn" class="service-btn">Service</button>
-
-<!-- Modale Service -->
 <div id="service-modal" class="modal hidden">
   <div class="modal-content">
     <h2>Heures d'utilisation lampes</h2>
@@ -34,8 +41,6 @@
   </div>
 </div>
 
-
-
 <div id="toast" class="toast hidden">Message</div>
 
 <body>
@@ -43,128 +48,118 @@
     <aside class="sidebar">
       <div class="logo">
         <img src="images/louvexpo-logo.png" alt="Logo" class="logo-img" />
-        <span class="logo-text"></span>
+        <span class="logo-text">LouvExpo</span>
       </div>
 
-      <button class="nav-button" data-page="projecteur">Vidéo</button>
-      <button class="nav-button" data-page="audio">Son & Micro</button>
-      <!--<button class="nav-button" data-page="systeme">Système</button>-->
+      <nav class="navigation">
+        <button class="nav-button active" data-page="projecteur">
+          <span>📽️</span> Vidéo
+        </button>
+        <button class="nav-button" data-page="audio">
+          <span>🔉</span> Son & Micro
+        </button>
+        <button class="nav-button mobile-power-btn" id="mobile-power-btn">
+          <span>⏻</span>
+        </button>
+      </nav>
 
       <div class="power-controls">
         <button class="power-button" data-power="on">Allumer</button>
         <button class="power-button" data-power="off">Éteindre</button>
       </div>
 
-      
-
-      <div class="power-controls">
-
     </aside>
 
     <main class="main">
       <header>
-        <h1 id="page-title">Vidéoprojecteur</h1>
+        <h1 id="page-title">Vidéo</h1>
         <div id="clock"></div>
       </header>
 
       <section id="projecteur" class="page active">
-        <h2>Contrôle Vidéo</h2>
-        <div class="centered">
-
-          <div class="video-section">
-            <h3 class="sources-title">Contrôle Général</h3>
+        <div class="dashboard-grid video-grid">
+          
+          <div class="card video-section">
+            <h3 class="card-title">Contrôle du projecteur</h3>
             <p>État actuel : <strong id="etat-videoproj">Éteint</strong></p>
-            <button class="toggle" data-group="projecteur" data-etat="on">Allumer</button>
-            <button class="toggle" data-group="projecteur" data-etat="off">Éteindre</button>
+            <div class="button-group">
+              <button class="toggle" data-group="projecteur" data-etat="on">Allumer</button>
+              <button class="toggle" data-group="projecteur" data-etat="off">Éteindre</button>
+            </div>
           </div>
 
-          <div class="video-section">
-            <h3 class="sources-title">Sélection Entrée Projecteur</h3>
-            <button class="toggle btn-proj-input" data-group="proj-input" data-input="sdi">SDI</button>
-            <button class="toggle btn-proj-input active" data-group="proj-input" data-input="hdbt">HDMI</button>
+          <div class="card video-section">
+            <h3 class="card-title">Entrée Projecteur</h3>
+            <p>Sélection de l'entrée principale</p>
+            <div class="button-group">
+              <button class="toggle btn-proj-input" data-group="proj-input" data-input="sdi">SDI</button>
+              <button class="toggle btn-proj-input active" data-group="proj-input" data-input="hdbt">HDMI</button>
+            </div>
           </div>
 
-          <div id="matrix-source-section" class="sources video-section">
-            <h3 class="sources-title">Sélection Source HDMI</h3>
+          <div class="card video-section large-card" id="matrix-source-section">
+            <h3 class="card-title">Sélection Source HDMI</h3>
             <p id="active-source">Source active : —</p>
-            
-            <button class="toggle btn-matrix-source" data-group="source" data-source="hdmi1">Ecran</button>
-            <button class="toggle btn-matrix-source" data-group="source" data-source="hdmi2">Fond de salle</button>
-            <button class="toggle btn-matrix-source" data-group="source" data-source="hdmi3">Régie</button>
+            <div class="button-group">
+              <button class="toggle btn-matrix-source" data-group="source" data-source="hdmi1">Ecran</button>
+              <button class="toggle btn-matrix-source" data-group="source" data-source="hdmi2">Fond de salle</button>
+              <button class="toggle btn-matrix-source" data-group="source" data-source="hdmi3">Régie</button>
+            </div>
           </div>
 
         </div>
       </section>
 
       <section id="audio" class="page">
-        <h2>Contrôle Audio</h2>
-        <div class="sliders">
-          
-          <div class="slider-row">
+        <div class="dashboard-grid audio-grid">
+
+          <div class="card audio-card">
             <label>Micro 1</label>
-            <input type="range" min="0" max="100" />
-            <span class="slider-value">50</span>
+            <div class="slider-row">
+              <input type="range" min="0" max="100" value="50" />
+              <span class="slider-value">50</span>
+            </div>
             <button class="toggle btn-mute" data-channel="01">Mute</button>
           </div>
-          
-          <div class="slider-row">
+
+          <div class="card audio-card">
             <label>Micro 2</label>
-            <input type="range" min="0" max="100" />
-            <span class="slider-value">50</span>
+            <div class="slider-row">
+              <input type="range" min="0" max="100" value="50" />
+              <span class="slider-value">50</span>
+            </div>
             <button class="toggle btn-mute" data-channel="02">Mute</button>
           </div>
 
-          <div class="slider-row">
+          <div class="card audio-card">
             <label>Enceinte face</label>
-            <input type="range" min="0" max="100" />
-            <span class="slider-value">50</span>
+            <div class="slider-row">
+              <input type="range" min="0" max="100" value="50" />
+              <span class="slider-value">50</span>
+            </div>
             <button class="toggle btn-mute" data-channel="03">Mute</button>
           </div>
           
-          <div class="slider-row">
+          <div class="card audio-card">
             <label>Enceinte arrière</label>
-            <input type="range" min="0" max="100" />
-            <span class="slider-value">50</span>
+            <div class="slider-row">
+              <input type="range" min="0" max="100" value="50" />
+              <span class="slider-value">50</span>
+            </div>
             <button class="toggle btn-mute" data-channel="04">Mute</button>
           </div>
           
-          <div class="slider-row">
+          <div class="card audio-card">
             <label>Subwoofer</label>
-            <input type="range" min="0" max="100" />
-            <span class="slider-value">50</span>
+            <div class="slider-row">
+              <input type="range" min="0" max="100" value="50" />
+              <span class="slider-value">50</span>
+            </div>
             <button class="toggle btn-mute" data-channel="05">Mute</button>
           </div>
 
         </div>
       </section>
-
-      </section>
-
-      <section id="alimentation" class="page">
-        <h2>Contrôle Alimentation (Détaillé)</h2>
-        <div class="power-grid">
-          
-          <div class="power-box">
-            <h3>Prise 1 (Canal 1)</h3>
-            <div class="power-box-buttons">
-              <button class="toggle btn-prise" data-group="prise1" data-id="1" data-action="on">ON</button>
-              <button class="toggle btn-prise" data-group="prise1" data-id="1" data-action="off">OFF</button>
-            </div>
-          </div>
-
-          <div class="power-box">
-            <h3>Prise 2 (Canal 2)</h3>
-            <div class="power-box-buttons">
-              <button class="toggle btn-prise" data-group="prise2" data-id="2" data-action="on">ON</button>
-              <button class="toggle btn-prise" data-group="prise2" data-id="2" data-action="off">OFF</button>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      <section id="systeme" class="page">
-
 
       <section id="systeme" class="page">
         <h2>Informations Système</h2>
@@ -174,6 +169,7 @@
           <button class="toggle" data-group="systeme" data-etat="off">Éteindre</button>
         </div>
       </section>
+
     </main>
   </div>
 </body>
