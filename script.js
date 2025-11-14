@@ -41,22 +41,6 @@ navButtons.forEach(btn => {
 });
 
 // =========================
-// Boutons exclusifs par groupe (style actif)
-// =========================
-const toggleButtons = document.querySelectorAll("button.toggle");
-toggleButtons.forEach(button => {
-  button.addEventListener("click", () => {
-    const group = button.dataset.group;
-    if (group) {
-      toggleButtons.forEach(btn => {
-        if (btn.dataset.group === group) btn.classList.remove("active");
-      });
-      button.classList.add("active");
-    }
-  });
-});
-
-// =========================
 // NOUVEAUX WebSockets de Contrôle
 // =========================
 // !! PENSEZ À CHANGER 127.0.0.1 PAR L'IP DE VOTRE PC DE CONTRÔLE !!
@@ -85,11 +69,14 @@ function sendCommand(ws, command) {
 // =========================
 function sendSliderValue(name, value) {
   let sliderId;
-  if (name === "Micro 1")           sliderId = "fader1";
-  if (name === "Micro 2")           sliderId = "fader2";
-  if (name === "Enceinte face")     sliderId = "fader3";
-  if (name === "Enceinte arrière")  sliderId = "fader4";
-  if (name === "Subwoofer")         sliderId = "fader5";
+  // Utilise .trim() pour nettoyer le nom du label avant de comparer
+  const cleanName = name.trim(); 
+  
+  if (cleanName === "Micro 1")           sliderId = "fader1";
+  if (cleanName === "Micro 2")           sliderId = "fader2";
+  if (cleanName === "Enceinte face")     sliderId = "fader3";
+  if (cleanName === "Enceinte arrière")  sliderId = "fader4";
+  if (cleanName === "Subwoofer")         sliderId = "fader5";
 
   const convertedValue = parseFloat(value) / 100; // 0–100 -> 0–1
 
@@ -100,7 +87,7 @@ function sendSliderValue(name, value) {
     });
     sendCommand(wsAudio, payload);
   } else {
-    console.warn(`Aucun fader mappé pour le label: ${name}`);
+    console.warn(`Aucun fader mappé pour le label: ${cleanName}`);
   }
 }
 
@@ -109,31 +96,47 @@ document.querySelectorAll("#audio .slider-row input[type=range]").forEach(slider
   valueLabel.textContent = slider.value;
   
   slider.addEventListener("input", () => {
-    valueLabel.textContent = slider.value;
+    // MODIFIÉ : Nous ne mettons plus à jour le label ici.
+    // Nous envoyons seulement la commande. Le retour WebSocket fera la mise à jour.
     const label = slider.closest(".audio-card").querySelector("label").textContent;
     sendSliderValue(label, slider.value);
   });
 });
 
 // =========================
-// WebSocket /service (Feedback)
+// WebSocket /service (Feedback) - (MODIFIÉ)
 // =========================
 let lastLampesData = [];
 wsService.onmessage = (event) => {
   try {
     const data = JSON.parse(event.data);
+
+    // Heures des lampes (inchangé)
     if (data.type === "heuresLampes" && Array.isArray(data.lampes)) {
       lastLampesData = data.lampes;
       updateLampesUI();
     }
+    // État du projecteur (modifié pour appeler la nouvelle fonction UI)
     else if (data.type === "etatProjecteur") {
-      const label = document.getElementById("etat-videoproj");
-      if (label) label.textContent = data.etat;
+      updateProjectorStateUI(data.etat);
     }
+    // Source active (modifié pour appeler la nouvelle fonction UI)
     else if (data.type === "activeSource") {
-      const el = document.getElementById("active-source");
-      if (el) el.textContent = `Source active : ${data.label}`;
+      updateMatrixSourceUI(data.input, data.label);
     }
+    // NOUVEAU : Gère l'état d'entrée du projecteur (SDI/HDMI)
+    else if (data.type === "projectorInputState") {
+      updateProjectorInputUI(data.input);
+    }
+    // NOUVEAU : Gère l'état des Mutes
+    else if (data.type === "muteState") {
+      updateMuteButtonUI(data.channel, data.isMuted);
+    }
+    // NOUVEAU : Gère l'état des Sliders
+    else if (data.type === "faderState") {
+      updateSliderUI(data.fader, data.value);
+    }
+
   } catch (e) {
     console.error("Erreur parsing /service:", e);
   }
@@ -146,6 +149,112 @@ function updateLampesUI() {
       ? lastLampesData.join("<br>")
       : "Chargement...";
   }
+}
+
+// =========================
+// NOUVEAU : Fonctions de mise à jour de l'UI
+// Ces fonctions sont appelées par wsService.onmessage pour garantir
+// que l'interface reflète l'état *réel* du système.
+// =========================
+
+function updateProjectorStateUI(etatLabel) {
+  const label = document.getElementById("etat-videoproj");
+  if (label) label.textContent = etatLabel;
+  
+  const btnOn = document.querySelector('button[data-group="projecteur"][data-etat="on"]');
+  const btnOff = document.querySelector('button[data-group="projecteur"][data-etat="off"]');
+  
+  if (btnOn && btnOff) {
+      btnOn.classList.remove('active');
+      btnOff.classList.remove('active');
+      
+      if (etatLabel === "Allumé" || etatLabel === "Chauffe...") {
+        btnOn.classList.add('active');
+      } else if (etatLabel === "Éteint" || etatLabel === "Refroidissement...") {
+        btnOff.classList.add('active');
+      }
+  }
+}
+
+function updateProjectorInputUI(activeInput) { // activeInput = "sdi" ou "hdbt"
+  const btnSdi = document.querySelector('button[data-group="proj-input"][data-input="sdi"]');
+  const btnHdbt = document.querySelector('button[data-group="proj-input"][data-input="hdbt"]');
+  const matrixSection = document.getElementById('matrix-source-section');
+  
+  if (btnSdi && btnHdbt) {
+    btnSdi.classList.remove('active');
+    btnHdbt.classList.remove('active');
+    
+    if (activeInput === 'sdi') {
+      btnSdi.classList.add('active');
+      matrixSection.classList.add('disabled');
+    } else if (activeInput === 'hdbt') {
+      btnHdbt.classList.add('active');
+      matrixSection.classList.remove('disabled');
+    }
+  }
+}
+
+function updateMatrixSourceUI(inputId, inputLabel) { // inputId = "hdmi1" ou "01", inputLabel = "Ecran"
+  const label = document.getElementById("active-source");
+  
+  // Mapping pour gérer les retours "hdmi1" (écho) ou "01" (feedback matériel)
+  const sourceMap = { "01": "hdmi1", "02": "hdmi2", "03": "hdmi3" };
+  const activeSource = sourceMap[inputId] || inputId; // "hdmi1"
+
+  const buttons = document.querySelectorAll('.btn-matrix-source');
+  let foundLabel = "—";
+  
+  buttons.forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.source === activeSource) {
+      btn.classList.add('active');
+      foundLabel = btn.textContent.trim();
+    }
+  });
+
+  if (label) {
+    // Priorise le label du matériel s'il existe, sinon prend le label du bouton
+    label.textContent = `Source active : ${inputLabel || foundLabel}`;
+  }
+}
+
+function updateMuteButtonUI(channel, isMuted) { // channel = "01", isMuted = true
+  const btn = document.querySelector(`.btn-mute[data-channel="${channel}"]`);
+  if (btn) {
+    if (isMuted) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  }
+}
+
+function updateSliderUI(faderId, value) { // faderId = "fader1", value = 0.0 à 1.0
+  const faderMap = {
+    "fader1": "Micro 1",
+    "fader2": "Micro 2",
+    "fader3": "Enceinte face",
+    "fader4": "Enceinte arrière",
+    "fader5": "Subwoofer"
+  };
+  
+  const labelText = faderMap[faderId];
+  if (!labelText) return;
+  
+  const cards = document.querySelectorAll('.audio-card');
+  cards.forEach(card => {
+    const label = card.querySelector('label');
+    // Utilise .trim() pour fiabiliser la comparaison
+    if (label && label.textContent.trim() === labelText) { 
+      const slider = card.querySelector('input[type=range]');
+      const valueLabel = card.querySelector('.slider-value');
+      const roundedValue = Math.round(value * 100);
+      
+      if (slider) slider.value = roundedValue;
+      if (valueLabel) valueLabel.textContent = roundedValue;
+    }
+  });
 }
 
 // =========================
@@ -171,18 +280,15 @@ document.getElementById("service-close").addEventListener("click", () => {
 // =========================
 // Commandes Entrée Projecteur (SDI/HDBT)
 // =========================
-const matrixSourceSection = document.getElementById('matrix-source-section');
 document.querySelectorAll('.btn-proj-input').forEach(button => {
   button.addEventListener('click', () => {
     const inputType = button.dataset.input;
     const buttonText = button.textContent.trim();
     if (inputType === 'sdi') {
       sendCommand(wsProjecteur, "sdi_input");
-      matrixSourceSection.classList.add('disabled');
       showToast(`Entrée Projecteur : ${buttonText}`);
     } else if (inputType === 'hdbt') {
       sendCommand(wsProjecteur, "hdbt_input");
-      matrixSourceSection.classList.remove('disabled');
       showToast(`Entrée Projecteur : ${buttonText}`);
     }
   });
@@ -264,21 +370,30 @@ function showToast(message) {
 }
 
 // =========================
-// Contrôle Mute Audio (X32)
+// Contrôle Mute Audio (X32) - (MODIFIÉ)
 // =========================
 document.querySelectorAll('.btn-mute').forEach(button => {
   button.addEventListener('click', () => {
-    button.classList.toggle('active');
-    const isMuted = button.classList.contains('active');
-    const state = isMuted ? 0 : 1; // 0 = Mute, 1 = Unmute
+    // MODIFIÉ : On ne change plus l'état localement
+    // button.classList.toggle('active');
+    
+    // On détermine l'état souhaité en fonction de l'état actuel
+    const isCurrentlyMuted = button.classList.contains('active');
+    const newMuteState = !isCurrentlyMuted; // true = veut muter, false = veut un-muter
+    
+    // 0 = Mute (état 'active'), 1 = Unmute (état inactif)
+    const stateValue = newMuteState ? 0 : 1; 
+    
     const channel = button.dataset.channel;
     const payload = JSON.stringify({
       mute: `ch${channel}`,
-      state: state
+      state: stateValue
     });
     sendCommand(wsAudio, payload);
-    const label = button.closest(".audio-card").querySelector("label").textContent;
-    showToast(`${label} ${isMuted ? 'MUTE' : 'UNMUTE'}`);
+    
+    // MODIFIÉ : Le Toast est supprimé, la mise à jour sera visuelle
+    // const label = button.closest(".audio-card").querySelector("label").textContent;
+    // showToast(`${label} ${newMuteState ? 'MUTE' : 'UNMUTE'}`);
   });
 });
 
